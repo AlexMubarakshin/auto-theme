@@ -4,6 +4,7 @@
   "description": "This plugin template uses Typescript. If you are familiar with Javascript, Typescript will look very familiar. In fact, valid Javascript code is already valid Typescript code.",
   "license": "ISC",
   "scripts": {
+    "prepare": "husky install",
     "build": "webpack --mode=production",
     "build:watch": "webpack --mode=development --watch",
     "prettier:format": "prettier --write 'src/**/*.{js,jsx,ts,tsx,css,json}' ",
@@ -13,49 +14,42 @@
     "validate:theme": "ts-node ./scripts/validate-themes.ts"
   },
   "dependencies": {
-    "@types/jest": "^29.5.1",
-    "classnames": "^2.2.6",
-    "react": "^16.8.6",
-    "react-dom": "^16.8.6",
+    "classnames": "^2.3.2",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "ts-jest": "^29.1.0"
   },
   "devDependencies": {
+    "@effortlessmotion/html-webpack-inline-source-plugin": "^1.0.3",
     "@figma/plugin-typings": "^1.63.0",
-    "@types/react": "^16.8.24",
-    "@types/react-dom": "^16.8.5",
+    "@types/jest": "^29.5.1",
+    "@types/react": "^18.0.38",
+    "@types/react-dom": "^18.0.11",
     "@typescript-eslint/eslint-plugin": "^5.59.0",
     "@typescript-eslint/parser": "^5.59.0",
-    "css-loader": "^3.1.0",
+    "css-loader": "^6.7.3",
     "eslint": "^8.39.0",
     "eslint-plugin-react": "^7.32.2",
-    "html-webpack-inline-source-plugin": "^0.0.10",
-    "html-webpack-plugin": "^3.2.0",
-    "husky": "^3.0.2",
+    "html-webpack-plugin": "^5.5.1",
+    "husky": "^8.0.3",
     "jest": "^29.5.0",
-    "lint-staged": "^9.2.1",
+    "lint-staged": "^13.2.1",
     "prettier": "^1.18.2",
-    "style-loader": "^0.23.1",
-    "ts-loader": "^6.0.4",
+    "style-loader": "^3.3.2",
+    "ts-loader": "^9.4.2",
     "ts-node": "^10.9.1",
     "typescript": "^5.0.4",
-    "url-loader": "^2.1.0",
-    "webpack": "^4.39.1",
-    "webpack-cli": "^3.3.6"
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged && yarn validate:theme"
-    }
+    "url-loader": "^4.1.1",
+    "webpack": "^5.80.0",
+    "webpack-cli": "^5.0.2"
   },
   "lint-staged": {
-    "src/**/*.{css}": [
-      "prettier --write",
-      "git add"
+    "src/**/*.css": [
+      "prettier --write"
     ],
     "src/**/*.{js,jsx,ts,tsx,json}": [
       "yarn lint",
-      "prettier --write",
-      "git add"
+      "prettier --write"
     ]
   }
 }

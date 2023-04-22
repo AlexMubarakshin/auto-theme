@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-var-requires,no-undef */
-const HtmlWebpackInlineSourcePlugin = require("html-webpack-inline-source-plugin");
+const HtmlWebpackInlineSourcePlugin = require("@effortlessmotion/html-webpack-inline-source-plugin");
+
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const path = require("path");
 
-// eslint-disable-next-line no-undef
 module.exports = (env, argv) => ({
   mode: argv.mode === "production" ? "production" : "development",
 
@@ -17,22 +17,19 @@ module.exports = (env, argv) => ({
 
   module: {
     rules: [
-      // Converts TypeScript code to JavaScript
       { test: /\.tsx?$/, use: "ts-loader", exclude: /node_modules/ },
 
-      // Enables including CSS by doing "import './file.css'" in your TypeScript code
-      { test: /\.css$/, loader: [{ loader: "style-loader" }, { loader: "css-loader" }] },
+      {
+        test: /\.css$/,
+        use: ["style-loader", "css-loader"]
+      },
 
-      // Allows you to use "<%= require('./file.svg') %>" in your HTML code to get a data URI
-      { test: /\.(png|jpg|gif|webp|svg)$/, loader: [{ loader: "url-loader" }] }
+      { test: /\.(png|jpg|gif|webp|svg)$/, use: "url-loader" }
     ]
   },
 
   resolve: {
-    extensions: [".tsx", ".ts", ".js", ".jsx"],
-    alias: {
-      "@": path.resolve(__dirname, "src/")
-    }
+    extensions: [".tsx", ".ts", ".js", ".jsx"]
   },
 
   output: {
@@ -40,9 +37,9 @@ module.exports = (env, argv) => ({
     path: path.resolve(__dirname, "dist") // Compile into a folder called "dist"
   },
 
-  // Tells Webpack to generate "ui.html" and to inline "ui.ts" into it
   plugins: [
     new HtmlWebpackPlugin({
+      inject: "body",
       template: "./src/app/index.html",
       filename: "ui.html",
       inlineSource: ".(js)$",
