@@ -1,75 +1,55 @@
-import * as React from "react";
+import React, { FC, useEffect, useState } from "react";
+
+import {
+  FIGMA_MSG_LAYERS_SKIPPED_TYPE,
+  FIGMA_MSG_SELECT_LAYER_TYPE,
+  FIGMA_MSG_SELECTION_UPDATED_TYPE,
+  FIGMA_MSG_THEME_UPDATE_DARK_TO_LIGHT,
+  FIGMA_MSG_THEME_UPDATE_LIGHT_TO_DARK,
+  FIGMA_MSG_THEME_UPDATE_TYPE
+} from "../../common/constants";
+import { deserializeNodesFromJSON } from "../../common/nodes";
+
+import { ListItem } from "./ListItem";
+import { PlaceholderEmpty } from "./PlaceholderEmpty";
+import { Button } from "./Button";
+
+import classNames from "classnames";
+
 import "../styles/figma-plugin-ds.css";
 import "../styles/ui.css";
 import "../styles/nav.css";
 import "../styles/controls.css";
 import "../styles/empty-state.css";
 
-import ListItem from "./ListItem";
+const TAB_THEMES = "themes";
+const TAB_LAYERS = "layers";
 
-declare function require(path: string): any;
+const App: FC = () => {
+  const [selectedLayersLength, setSelectLayersLength] = useState(0);
+  const [activeTab, setActiveTab] = useState(TAB_THEMES);
+  const [skippedLayers, setSkippedLayers] = useState<ReadonlyArray<SceneNode>>(
+    []
+  );
+  const [activeLayer, setActiveLayer] = useState<SceneNode["id"]>(undefined);
 
-const App = ({}) => {
-  const [selectedLayersLength, setSelectLayersLength] = React.useState(0);
-  const [activeTab, setActiveTab] = React.useState("themes");
-  const [skippedLayers, setSkippedLayers] = React.useState([]);
-  const [activeLayer, setActiveLayer] = React.useState(0);
-
-  const onRunApp = React.useCallback(() => {
-    const message = "";
-    parent.postMessage({ pluginMessage: { type: "run-app", message } }, "*");
-  }, []);
-
-  // This tells the controller.ts file to theme
-  // our selection from dark to light.
-  const themeToLight = React.useCallback(() => {
-    const message = "dark-to-light-theme";
+  useEffect(() => {
     parent.postMessage(
-      { pluginMessage: { type: "theme-update", message } },
+      { pluginMessage: { type: "run-app", message: "" } },
       "*"
     );
-  }, []);
-
-  // This tells the controller.ts file to theme
-  // our selection from light to dark.
-  const themeToDark = React.useCallback(() => {
-    const message = "light-to-dark-theme";
-    parent.postMessage(
-      { pluginMessage: { type: "theme-update", message } },
-      "*"
-    );
-  }, []);
-
-  function setThemesActive() {
-    setActiveTab("themes");
-  }
-
-  function setLayersActive() {
-    setActiveTab("layers");
-  }
-
-  // When the user selects a layer in the skipped layer list.
-  const handleLayerSelect = id => {
-    setActiveLayer(id);
-    parent.postMessage(
-      { pluginMessage: { type: "select-layer", id: id } },
-      "*"
-    );
-  };
-
-  React.useEffect(() => {
-    onRunApp();
 
     window.onmessage = event => {
       const { type, message } = event.data.pluginMessage;
 
-      if (type === "selection-updated") {
-        let nodeArray = JSON.parse(message);
+      if (type === FIGMA_MSG_SELECTION_UPDATED_TYPE) {
+        const nodeArray = deserializeNodesFromJSON(message);
         setSelectLayersLength(nodeArray.length);
       }
 
-      if (type === "layers-skipped") {
-        let unthemedLayers = JSON.parse(message);
+      if (type === FIGMA_MSG_LAYERS_SKIPPED_TYPE) {
+        const unthemedLayers = deserializeNodesFromJSON(message);
+
         setSkippedLayers(skippedLayers => [
           ...skippedLayers,
           ...unthemedLayers
@@ -78,66 +58,89 @@ const App = ({}) => {
     };
   }, []);
 
-  const listItems = skippedLayers.map((node, index) => (
-    <ListItem
-      activeLayer={activeLayer}
-      onClick={handleLayerSelect}
-      key={index}
-      node={node}
-    />
-  ));
+  const themeToLight = () => {
+    parent.postMessage(
+      {
+        pluginMessage: {
+          type: FIGMA_MSG_THEME_UPDATE_TYPE,
+          message: FIGMA_MSG_THEME_UPDATE_DARK_TO_LIGHT
+        }
+      },
+      "*"
+    );
+  };
+
+  const themeToDark = () => {
+    parent.postMessage(
+      {
+        pluginMessage: {
+          type: FIGMA_MSG_THEME_UPDATE_TYPE,
+          message: FIGMA_MSG_THEME_UPDATE_LIGHT_TO_DARK
+        }
+      },
+      "*"
+    );
+  };
+
+  const handleThemesTabClick = () => {
+    setActiveTab(TAB_THEMES);
+  };
+
+  const handleLayersTabClick = () => {
+    setActiveTab(TAB_LAYERS);
+  };
+
+  // When the user selects a layer in the skipped layer list.
+  const handleLayerSelect = (id: SceneNode["id"]) => {
+    setActiveLayer(id);
+    parent.postMessage(
+      { pluginMessage: { type: FIGMA_MSG_SELECT_LAYER_TYPE, id: id } },
+      "*"
+    );
+  };
 
   return (
     <div className="wrapper">
       {selectedLayersLength === 0 ? (
-        <div className="empty-state">
-          <div className="empty-state__image">
-            <img className="layer-icon" src={require("../assets/layers.svg")} />
-          </div>
-          <h3 className="type type--pos-large-medium">
-            Select a layer to get started.
-          </h3>
-        </div>
+        <PlaceholderEmpty />
       ) : (
-        <React.Fragment>
+        <>
           <nav className="nav">
             <div
-              onClick={setThemesActive}
-              className={`section-title ${
-                activeTab === "themes" ? "active" : "disabled"
-              }`}
+              onClick={handleThemesTabClick}
+              className={classNames("section-title", {
+                active: activeTab === TAB_THEMES,
+                disabled: activeTab !== TAB_THEMES
+              })}
             >
               Themes
             </div>
+
             <div
-              onClick={setLayersActive}
-              className={`section-title ${
-                activeTab === "layers" ? "active" : "disabled"
-              }`}
+              onClick={handleLayersTabClick}
+              className={classNames("section-title", {
+                active: activeTab === TAB_LAYERS,
+                disabled: activeTab !== TAB_LAYERS
+              })}
             >
               Skipped Layers{" "}
-              {skippedLayers.length !== 0 ? (
+              {!!skippedLayers.length && (
                 <span className="layer-count"> ({skippedLayers.length})</span>
-              ) : null}
+              )}
             </div>
           </nav>
-          {activeTab === "themes" ? (
+
+          {activeTab === TAB_THEMES ? (
             <div className="active-state">
               <h3 className="active-state-title type type--pos-large-medium">
-                {selectedLayersLength} layers selected for themeing
+                {selectedLayersLength} layers selected for theming
               </h3>
-              <button
-                className="button button--primary button-margin-bottom"
-                onClick={themeToLight}
-              >
+              <Button className="button-margin-bottom" onClick={themeToLight}>
                 Light Theme
-              </button>
-              <button
-                className="button button--secondary"
-                onClick={themeToDark}
-              >
+              </Button>
+              <Button variant="secondary" onClick={themeToDark}>
                 Dark Theme
-              </button>
+              </Button>
             </div>
           ) : (
             <div className="layer-list-wrapper">
@@ -148,11 +151,20 @@ const App = ({}) => {
                   </h3>
                 </div>
               ) : (
-                <ul className="list">{listItems}</ul>
+                <ul className="list">
+                  {skippedLayers.map((node, index) => (
+                    <ListItem
+                      active={activeLayer === node.id}
+                      onClick={handleLayerSelect}
+                      key={index}
+                      node={node}
+                    />
+                  ))}
+                </ul>
               )}
             </div>
           )}
-        </React.Fragment>
+        </>
       )}
     </div>
   );

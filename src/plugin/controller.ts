@@ -1,69 +1,55 @@
 // Plugin window dimensions
-figma.showUI(__html__, { width: 320, height: 358 });
+import {
+  FIGMA_MSG_LAYERS_SKIPPED_TYPE,
+  FIGMA_MSG_RUN_APP_TYPE,
+  FIGMA_MSG_SELECT_LAYER_TYPE,
+  FIGMA_MSG_SELECTION_UPDATED_TYPE,
+  FIGMA_MSG_THEME_UPDATE_DARK_TO_LIGHT,
+  FIGMA_MSG_THEME_UPDATE_LIGHT_TO_DARK,
+  FIGMA_MSG_THEME_UPDATE_TYPE
+} from "../common/constants";
+import { flattenNodes, serializeNodesToJSON } from "../common/nodes";
+import { RGBToHex, normalizeColor } from "../common/colors";
+import { Theme } from "../common/types";
 
-// Imported themes
 import { darkTheme } from "./dark-to-light-theme";
 import { lightTheme } from "./light-to-dark-theme";
 
-// Utility function for serializing nodes to pass back to the UI.
-function serializeNodes(nodes) {
-  let serializedNodes = JSON.stringify(nodes, [
-    "name",
-    "type",
-    "children",
-    "id"
-  ]);
+export const PLUGIN_WINDOW_WIDTH = 320;
+export const PLUGIN_WINDOW_HEIGHT = 358;
 
-  return serializedNodes;
-}
+const onFigmaMessage: MessageEventHandler = msg => {
+  const skippedLayers = [];
 
-// Utility function for flattening the
-// selection of nodes in Figma into an array.
-const flatten = obj => {
-  const array = Array.isArray(obj) ? obj : [obj];
-  return array.reduce((acc, value) => {
-    acc.push(value);
-    if (value.children) {
-      acc = acc.concat(flatten(value.children));
-      delete value.children;
-    }
-    return acc;
-  }, []);
-};
-
-figma.ui.onmessage = msg => {
-  let skippedLayers = [];
-
-  if (msg.type === "run-app") {
+  if (msg.type === FIGMA_MSG_RUN_APP_TYPE) {
     // If nothing's selected, we tell the UI to keep the empty state.
     if (figma.currentPage.selection.length === 0) {
       figma.ui.postMessage({
-        type: "selection-updated",
+        type: FIGMA_MSG_SELECTION_UPDATED_TYPE,
         message: 0
       });
     } else {
-      let selectedNodes = flatten(figma.currentPage.selection);
+      const selectedNodes = flattenNodes(figma.currentPage.selection);
 
       // Update the UI with the number of selected nodes.
       // This will display our theming controls.
       figma.ui.postMessage({
-        type: "selection-updated",
-        message: serializeNodes(selectedNodes)
+        type: FIGMA_MSG_SELECTION_UPDATED_TYPE,
+        message: serializeNodesToJSON(selectedNodes)
       });
     }
   }
 
-  // When a theme is selected
-  if (msg.type === "theme-update") {
+  if (msg.type === FIGMA_MSG_THEME_UPDATE_TYPE) {
     const nodesToTheme = figma.currentPage.selection;
 
-    if (msg.message === "dark-to-light-theme") {
+    if (msg.message === FIGMA_MSG_THEME_UPDATE_DARK_TO_LIGHT) {
       // Update the layers with this theme, by passing in the
       // selected nodes and the theme object.
       nodesToTheme.map(selected => updateTheme(selected, darkTheme));
     }
 
-    if (msg.message === "light-to-dark-theme") {
+    if (msg.message === FIGMA_MSG_THEME_UPDATE_LIGHT_TO_DARK) {
       // Update the layers with this theme, by passing in the
       // selected nodes and the theme object.
       nodesToTheme.map(selected => updateTheme(selected, lightTheme));
@@ -73,18 +59,18 @@ figma.ui.onmessage = msg => {
     // sending the skipped layers back to the UI.
     setTimeout(function() {
       figma.ui.postMessage({
-        type: "layers-skipped",
-        message: serializeNodes(skippedLayers)
+        type: FIGMA_MSG_LAYERS_SKIPPED_TYPE,
+        message: serializeNodesToJSON(skippedLayers)
       });
     }, 500);
 
-    figma.notify(`Theming complete`, { timeout: 750 });
+    figma.notify("Theming complete", { timeout: 750 });
   }
 
   // When a layer is selected from the skipped layers.
-  if (msg.type === "select-layer") {
-    let layer = figma.getNodeById(msg.id);
-    let layerArray = [];
+  if (msg.type === FIGMA_MSG_SELECT_LAYER_TYPE) {
+    const layer = figma.getNodeById(msg.id);
+    const layerArray = [];
 
     // Using selection and viewport requires an array.
     layerArray.push(layer);
@@ -98,20 +84,22 @@ figma.ui.onmessage = msg => {
   // Swap styles with the corresponding/mapped styles
   async function replaceStyles(
     node,
-    style,
+    style: BaseStyle,
     mappings,
     applyStyle: (node, styleId) => void
   ) {
     // Find the style the ID corresponds to in the team library
-    let importedStyle = await figma.importStyleByKeyAsync(style.key);
+    const importedStyle = await figma.importStyleByKeyAsync(style.key);
 
     // Once the promise is resolved, then see if the
     // key matches anything in the mappings object.
     if (mappings[importedStyle.key] !== undefined) {
-      let mappingStyle = mappings[importedStyle.key];
+      const mappingStyle = mappings[importedStyle.key];
 
       // Use the mapping value to fetch the official style.
-      let newStyle = await figma.importStyleByKeyAsync(mappingStyle.mapsToKey);
+      const newStyle = await figma.importStyleByKeyAsync(
+        mappingStyle.mapsToKey
+      );
 
       // Update the node with the new color.
       applyStyle(node, newStyle.id);
@@ -128,14 +116,16 @@ figma.ui.onmessage = msg => {
     mappings,
     applyStyle: (node, styleId) => void
   ) {
-    let styleName = nodeType.toLowerCase() + " " + style;
+    const styleName = nodeType.toLowerCase() + " " + style;
     console.log(styleName);
     // See if the key matches anything in the mappings object.
     if (mappings[styleName] !== undefined) {
-      let mappingStyle = mappings[styleName];
+      const mappingStyle = mappings[styleName];
 
       // Use the mapping value to fetch the official style.
-      let newStyle = await figma.importStyleByKeyAsync(mappingStyle.mapsToKey);
+      const newStyle = await figma.importStyleByKeyAsync(
+        mappingStyle.mapsToKey
+      );
 
       // Update the node with the new color.
       applyStyle(node, newStyle.id);
@@ -150,8 +140,8 @@ figma.ui.onmessage = msg => {
     mappings,
     applyComponent: (node, masterComponent) => void
   ) {
-    let componentToSwitchWith = mappings[key];
-    let importedComponent = await figma.importComponentByKeyAsync(
+    const componentToSwitchWith = mappings[key];
+    const importedComponent = await figma.importComponentByKeyAsync(
       componentToSwitchWith.mapsToKey
     );
     // Switch the existing component to a new component.
@@ -167,8 +157,8 @@ figma.ui.onmessage = msg => {
     );
   }
 
-  async function replaceFills(node, style, mappings) {
-    await replaceStyles(
+  function replaceFills(node, style, mappings) {
+    return replaceStyles(
       node,
       style,
       mappings,
@@ -176,8 +166,8 @@ figma.ui.onmessage = msg => {
     );
   }
 
-  async function replaceNoStyleFill(node, nodeType, style, mappings) {
-    await fixStyles(
+  function replaceNoStyleFill(node, nodeType, style, mappings) {
+    return fixStyles(
       node,
       nodeType,
       style,
@@ -186,8 +176,8 @@ figma.ui.onmessage = msg => {
     );
   }
 
-  async function replaceStrokes(node, style, mappings) {
-    await replaceStyles(
+  function replaceStrokes(node, style: BaseStyle, mappings) {
+    return replaceStyles(
       node,
       style,
       mappings,
@@ -195,8 +185,8 @@ figma.ui.onmessage = msg => {
     );
   }
 
-  async function replaceEffects(node, style, mappings) {
-    await replaceStyles(
+  function replaceEffects(node, style: BaseStyle, mappings) {
+    return replaceStyles(
       node,
       style,
       mappings,
@@ -206,7 +196,7 @@ figma.ui.onmessage = msg => {
 
   // Updates the node with the new theme depending on
   // the type of the node.
-  function updateTheme(node, theme) {
+  function updateTheme(node, theme: Theme) {
     switch (node.type) {
       case "COMPONENT":
       case "COMPONENT_SET":
@@ -215,7 +205,6 @@ figma.ui.onmessage = msg => {
       case "ELLIPSE":
       case "POLYGON":
       case "STAR":
-      case "LINE":
       case "BOOLEAN_OPERATION":
       case "FRAME":
       case "LINE":
@@ -227,7 +216,7 @@ figma.ui.onmessage = msg => {
         }
         if (node.fills) {
           if (node.fillStyleId && typeof node.fillStyleId !== "symbol") {
-            let style = figma.getStyleById(node.fillStyleId);
+            const style = figma.getStyleById(node.fillStyleId);
             // Pass in the layer we want to change, the style ID the node is using.
             // and the set of mappings we want to check against.
             replaceFills(node, style, theme);
@@ -235,8 +224,8 @@ figma.ui.onmessage = msg => {
             // No style on the layer? Let's fix it for them.
             // First we need the fill type determined above ex:is it #ffffff?), then
             // we pass that hex into a new function.
-            let style = determineFill(node.fills);
-            let nodeType = node.type;
+            const style = determineFill(node.fills);
+            const nodeType = node.type;
             replaceNoStyleFill(node, nodeType, style, theme);
           } else {
             skippedLayers.push(node);
@@ -254,7 +243,7 @@ figma.ui.onmessage = msg => {
         break;
       }
       case "INSTANCE": {
-        let componentKey = node.masterComponent.key;
+        const componentKey = node.masterComponent.key;
         // If this instance is in mapping, then call it and skip it's children
         // otherwise check for the normal differences.
         if (theme[componentKey] !== undefined) {
@@ -262,7 +251,7 @@ figma.ui.onmessage = msg => {
         } else {
           if (node.fills) {
             if (node.fillStyleId && typeof node.fillStyleId !== "symbol") {
-              let style = figma.getStyleById(node.fillStyleId);
+              const style = figma.getStyleById(node.fillStyleId);
               // Pass in the layer we want to change, the style ID the node is using.
               // and the set of mappings we want to check against.
               replaceFills(node, style, theme);
@@ -270,8 +259,8 @@ figma.ui.onmessage = msg => {
               // No style on the layer? Let's fix it for them.
               // First we need the fill type determined above ex:is it #ffffff?), then
               // we pass that hex into a new function.
-              let style = determineFill(node.fills);
-              let nodeType = node.type;
+              const style = determineFill(node.fills);
+              const nodeType = node.type;
               replaceNoStyleFill(node, nodeType, style, theme);
             } else {
               skippedLayers.push(node);
@@ -298,13 +287,14 @@ figma.ui.onmessage = msg => {
         if (node.fillStyleId && typeof node.fillStyleId !== "symbol") {
           replaceFills(node, figma.getStyleById(node.fillStyleId), theme);
         } else if (node.fillStyleId === "") {
-          let style = determineFill(node.fills);
-          let nodeType = node.type;
+          const style = determineFill(node.fills);
+          const nodeType = node.type;
           replaceNoStyleFill(node, nodeType, style, theme);
         } else {
           skippedLayers.push(node);
         }
       }
+      // eslint-disable-next-line no-fallthrough
       default: {
         // do nothing
       }
@@ -313,46 +303,23 @@ figma.ui.onmessage = msg => {
 
   // Determine a nodes fills
   function determineFill(fills) {
-    let fillValues = [];
+    const fillValues = [];
     let rgbObj;
 
     fills.forEach(fill => {
       if (fill.type === "SOLID" && fill.visible === true) {
-        rgbObj = convertColor(fill.color);
+        rgbObj = normalizeColor(fill.color);
         fillValues.push(RGBToHex(rgbObj["r"], rgbObj["g"], rgbObj["b"]));
       }
     });
 
     return fillValues[0];
   }
-
-  // Utility functions for color conversion.
-  function convertColor(color) {
-    const colorObj = color;
-    const figmaColor = {};
-
-    Object.entries(colorObj).forEach(cf => {
-      const [key, value] = cf;
-
-      if (["r", "g", "b"].includes(key)) {
-        figmaColor[key] = (255 * (value as number)).toFixed(0);
-      }
-      if (key === "a") {
-        figmaColor[key] = value;
-      }
-    });
-    return figmaColor;
-  }
-
-  function RGBToHex(r, g, b) {
-    r = Number(r).toString(16);
-    g = Number(g).toString(16);
-    b = Number(b).toString(16);
-
-    if (r.length == 1) r = "0" + r;
-    if (g.length == 1) g = "0" + g;
-    if (b.length == 1) b = "0" + b;
-
-    return "#" + r + g + b;
-  }
 };
+
+figma.showUI(__html__, {
+  width: PLUGIN_WINDOW_WIDTH,
+  height: PLUGIN_WINDOW_HEIGHT
+});
+
+figma.ui.onmessage = onFigmaMessage;

@@ -1,33 +1,37 @@
-import * as React from "react";
+import React, { FC } from "react";
 import classNames from "classnames";
 
-function ListItem(props) {
-  const node = props.node;
+type Props = {
+  active?: boolean;
+  node: SceneNode;
+  onClick: (nodeId: SceneNode["id"]) => void;
+};
 
-  const handleClick = id => {
-    props.onClick(id);
+export const ListItem: FC<Props> = ({ active, node, onClick }) => {
+  const handleClick = () => {
+    onClick(node.id);
   };
 
   return (
     <li
       id={node.id}
-      className={classNames(`list-item`, {
-        "list-item--active": props.activeLayer === node.id,
-        "list-item--selected": props.activeLayer === node.id
+      className={classNames("list-item", {
+        "list-item--active": active,
+        "list-item--selected": active
       })}
-      onClick={() => handleClick(node.id)}
+      onClick={handleClick}
     >
       <div className="list-flex-row">
-        <span className="list-arrow"></span>
+        <span className="list-arrow" />
+
         <span className="list-icon">
           <img src={require("../assets/" + node.type.toLowerCase() + ".svg")} />
         </span>
+
         <span className="list-name type type--pos-small-normal">
           {node.name}
         </span>
       </div>
     </li>
   );
-}
-
-export default ListItem;
+};

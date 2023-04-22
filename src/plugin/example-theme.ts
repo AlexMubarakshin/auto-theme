@@ -1,7 +1,8 @@
 // Themes are objects.
 // Using the "Inspector" plugin we've made pubic makes this process easier!
+import { Theme } from "../common/types";
 
-const sampleTheme = {
+const sampleTheme: Theme = {
   // Within the object, we check for a *style key*,
   // Figma uses this key to refer to a specific style in your library
   "5c1691cbeaaf4270107d34f1a12f02fdd04afa02": {
