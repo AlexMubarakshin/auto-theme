@@ -1,0 +1,12 @@
+.nav-item {
+  cursor: pointer;
+  color: #b3b3b3;
+}
+
+.nav-item:hover {
+  color: #333;
+}
+
+.nav-item--active {
+  color: #333;
+}

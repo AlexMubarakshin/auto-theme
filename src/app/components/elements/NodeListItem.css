@@ -1,27 +1,3 @@
-.nav {
-  display: flex;
-  flex-flow: row;
-  border-bottom: 1px solid #e5e5e5;
-  padding: 4px 8px;
-}
-
-.nav .section-title {
-  cursor: pointer;
-}
-
-.active {
-  color: #333;
-}
-
-.disabled {
-  color: #b3b3b3;
-  cursor: pointer;
-}
-
-.disabled:hover {
-  color: #333;
-}
-
 .list {
   flex: 1;
   margin: 0;
@@ -111,9 +87,4 @@
   overflow: hidden;
   text-overflow: ellipsis;
   margin-right: 48px;
-}
-
-.layer-count {
-  padding-left: 2px;
-  /* color: #b3b3b3; */
 }

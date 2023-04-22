@@ -15,17 +15,12 @@ export function RGBToHex(
 }
 
 // Normalizes a color object from a normalized format to a Figma-specific format.
-export function normalizeColor(color: {
-  r: number;
-  g: number;
-  b: number;
-  a?: number;
-}): { r: number; g: number; b: number; a?: number } {
-  const figmaColor = { ...color };
-
-  figmaColor.r = Math.round(figmaColor.r * 255);
-  figmaColor.g = Math.round(figmaColor.g * 255);
-  figmaColor.b = Math.round(figmaColor.b * 255);
-
-  return figmaColor;
+export function normalizeColor(
+  figmaColor: RGB | RGBA
+): { r: number; g: number; b: number; a?: number } {
+  return {
+    r: Math.round(figmaColor.r * 255),
+    g: Math.round(figmaColor.g * 255),
+    b: Math.round(figmaColor.b * 255)
+  };
 }
