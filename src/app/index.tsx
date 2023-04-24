@@ -3,7 +3,9 @@ import { createRoot } from "react-dom/client";
 
 import App from "./components/App";
 
-const domNode = document.getElementById("plugin-root");
-const root = createRoot(domNode);
+document.addEventListener("DOMContentLoaded", function() {
+  const domNode = document.getElementById("plugin-root");
+  const root = createRoot(domNode);
 
-root.render(<App />);
+  root.render(<App />);
+});

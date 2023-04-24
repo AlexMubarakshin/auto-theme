@@ -19,18 +19,13 @@ module.exports = (env, argv) => ({
     rules: [
       { test: /\.tsx?$/, use: "ts-loader", exclude: /node_modules/ },
 
-      {
-        test: /\.css$/,
-        use: ["style-loader", "css-loader"]
-      },
+      { test: /\.css$/, use: ["style-loader", { loader: "css-loader" }] },
 
-      { test: /\.(png|jpg|gif|webp|svg)$/, use: "url-loader" }
+      { test: /\.(png|jpg|gif|webp|svg)$/, loader: "url-loader" }
     ]
   },
 
-  resolve: {
-    extensions: [".tsx", ".ts", ".js", ".jsx"]
-  },
+  resolve: { extensions: [".tsx", ".ts", ".jsx", ".js"] },
 
   output: {
     filename: "[name].js",
@@ -39,12 +34,12 @@ module.exports = (env, argv) => ({
 
   plugins: [
     new HtmlWebpackPlugin({
-      inject: "body",
       template: "./src/app/index.html",
       filename: "ui.html",
+      chunks: ["ui"],
       inlineSource: ".(js)$",
-      chunks: ["ui"]
+      cache: false
     }),
-    new HtmlWebpackInlineSourcePlugin()
+    new HtmlWebpackInlineSourcePlugin(HtmlWebpackPlugin)
   ]
 });

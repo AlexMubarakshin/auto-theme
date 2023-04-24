@@ -27,8 +27,11 @@ export const NodeListItem: FC<Props> = memo(
           <span className="list-arrow" />
 
           <span className="list-icon">
+            {/* eslint-disable-next-line @typescript-eslint/no-var-requires */}
             <img
-              src={require("../../../../assets/" + type.toLowerCase() + ".svg")}
+              src={
+                require("../../assets/" + type.toLowerCase() + ".svg").default
+              }
             />
           </span>
 

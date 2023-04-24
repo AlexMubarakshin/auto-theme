@@ -9,7 +9,24 @@ import { darkTheme } from "../dark-to-light-theme";
 import { lightTheme } from "../light-to-dark-theme";
 import { serializeNodesToJSON } from "../../common/nodes";
 
+function createImportStyleByAsyncWithCache() {
+  const cache: Record<string, BaseStyle> = {};
+
+  return async (key: string) => {
+    if (cache[key]) {
+      return cache[key];
+    }
+
+    const style = await figma.importStyleByKeyAsync(key);
+    cache[key] = style;
+
+    return style;
+  };
+}
+
 export function handleThemeUpdate(pluginMessage) {
+  const importCachedStyleByKeyAsync = createImportStyleByAsyncWithCache();
+
   // Swap styles with the corresponding/mapped styles
   async function replaceStyles(
     node,
@@ -18,7 +35,7 @@ export function handleThemeUpdate(pluginMessage) {
     applyStyle: (node, styleId) => void
   ) {
     // Find the style the ID corresponds to in the team library
-    const importedStyle = await figma.importStyleByKeyAsync(style.key);
+    const importedStyle = await importCachedStyleByKeyAsync(style.key);
 
     // Once the promise is resolved, then see if the
     // key matches anything in the theme object.
@@ -26,7 +43,7 @@ export function handleThemeUpdate(pluginMessage) {
       const mappingStyle = theme[importedStyle.key];
 
       // Use the mapping value to fetch the official style.
-      const newStyle = await figma.importStyleByKeyAsync(
+      const newStyle = await importCachedStyleByKeyAsync(
         mappingStyle.mapsToKey
       );
 
@@ -52,7 +69,7 @@ export function handleThemeUpdate(pluginMessage) {
       const mappingStyle = theme[styleName];
 
       // Use the mapping value to fetch the official style.
-      const newStyle = await figma.importStyleByKeyAsync(
+      const newStyle = await importCachedStyleByKeyAsync(
         mappingStyle.mapsToKey
       );
 
